@@ -1,4 +1,4 @@
-# Inferencia Interactiva con NVIDIA Canary-1B-v2
+# Análisis y Exploración del Modelo NVIDIA Canary-1B-v2
 
 ## 1. Resumen (Abstract)
 Este proyecto documenta el análisis y la implementación práctica del modelo multilingüe **Canary-1B-v2** creado por NVIDIA para tareas secuenciales de Reconocimiento Automático del Habla (ASR) y Traducción de Voz a Texto (S2T). El presente trabajo aborda desde el entendimiento de la arquitectura hasta el despliegue de una interfaz gráfica de usuario en `Streamlit` para aplicar inferencia interactiva en audios locales. Adicionalmente, se consolida una evaluación cuantitativa del modelo utilizando métricas de error de transcripción y de caracteres (WER/CER).
