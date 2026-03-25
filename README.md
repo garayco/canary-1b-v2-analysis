@@ -50,7 +50,7 @@ Se extrajo y ejecutó el módulo `encoder.pre_encode` de forma aislada para simu
 | Aplanado | `[1, 56, 4096]` | $256 \times 16 = 4096$ rasgos por frame |
 | Proyección lineal | `[1, 56, 1024]` | Proyección al espacio latente de 1024 dimensiones (`d_model`) |
 
-El factor 8× reduce el costo de la Auto-Atención (que crece $O(T^2)$).
+El factor 8× reduce el costo de la Auto-Atención (que crece $O(T^2)$ ).
 
 ### 4.4 Codificación posicional relativa (`RelPositionalEncoding`)
 
