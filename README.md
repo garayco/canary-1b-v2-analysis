@@ -58,28 +58,23 @@ Se inspeccionó el módulo `encoder.pos_enc`. A diferencia de los Transformers e
 
 La dimensión 111 se deriva directamente de $2T - 1 = 2(56) - 1 = 111$, ya que entre $T = 56$ frames la máxima distancia representable es de $\pm(T-1) = \pm 55$ pasos: un extremo cubre el caso en que el último cuadro mira al primero (−55), y el otro el caso inverso (+55). Ambos tensores viajan separados hacia el mecanismo de atención. Allí, `pos_emb` es proyectado linealmente a través de `linear_pos` (sin sesgo) para producir la matriz $P$ de forma `[1, 8, 111, 128]`; su traspuesta $P^T$ es la que se multiplica por la Query modificada para construir `matrix_bd` (relevancia posicional), mientras que `matrix_ac` captura la similitud de contenido mediante el producto $Q \times K^T$.
 
-```mermaid
-flowchart LR
-    A["x_subsampled\n[1, 56, 1024]"] --> B["pos_enc\nRelPositionalEncoding"]
+Cada una de las 111 filas de `pos_emb` corresponde a una distancia relativa distinta, con su propio vector de 1024 dimensiones aprendido durante el entrenamiento:
 
-    B -->|"sin cambios"| C["x_ready\n[1, 56, 1024]\nContenido acústico"]
-    B -->|"genera"| D["pos_emb\n[1, 111, 1024]\nDistancias relativas"]
+| Índice en `pos_emb` | Distancia relativa | Significado |
+| :---: | :---: | :--- |
+| 0 | −55 | Frame actual mirando al frame más lejano hacia atrás |
+| … | … | … |
+| 54 | −1 | Frame inmediatamente anterior |
+| 55 | 0 | El propio frame (auto-atención) |
+| 56 | +1 | Frame inmediatamente siguiente |
+| … | … | … |
+| 110 | +55 | Frame actual mirando al frame más lejano hacia adelante |
 
-    C --> E["linear_q/k/v\nQ, K, V → [1, 8, 56, 128]"]
-    D --> F["linear_pos\nP → [1, 8, 111, 128]"]
-
-    E -->|"Q × Kᵀ"| G["matrix_ac\n[1, 8, 56, 56]\nSimilitud de contenido"]
-    E -->|"Q × Pᵀ + rel_shift"| H["matrix_bd\n[1, 8, 56, 56]\nRelevancia posicional"]
-    F --> H
-
-    G --> I["Atención total\nac + bd → Softmax → × V"]
-    H --> I
-
-    I --> J["Salida MHA\n[1, 56, 1024]"]
-```
-
-
-
+| Tensor | Shape | Descripción |
+| :--- | :--- | :--- |
+| `pos_emb` | `[1, 111, 1024]` | Embeddings de distancias relativas generados por `pos_enc` |
+| $P$ (`linear_pos`) | `[1, 8, 111, 128]` | `pos_emb` proyectado al espacio multi-cabeza |
+| $P^T$ | `[1, 8, 128, 111]` | Traspuesta de $P$; se multiplica por $Q$ para obtener `matrix_bd` |
 
 ### 4.5 Análisis de una capa Conformer (`ConformerLayer`)
 
