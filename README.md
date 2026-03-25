@@ -54,7 +54,32 @@ El factor 8× reduce el costo de la Auto-Atención (que crece $O(T^2)$).
 
 ### 4.4 Codificación posicional relativa (`RelPositionalEncoding`)
 
-Se inspeccionó el módulo `encoder.pos_enc`. En Canary, el contenido acústico pasa intacto, mientras que en paralelo se genera una matriz de embeddings posicionales relativos. Ambos tensores viajan por separado hacia el mecanismo de atención.
+Se inspeccionó el módulo `encoder.pos_enc`. A diferencia de los Transformers estándar, que suman un único embedding de posición absoluta al tensor de entrada, el FastConformer mantiene dos flujos paralelos: el contenido acústico `x_ready` pasa **sin modificación**, mientras que en paralelo se construye una matriz `pos_emb` de forma `[1, 111, 1024]` que codifica las **distancias relativas** posibles entre cualquier par de cuadros en la secuencia.
+
+La dimensión 111 se deriva directamente de $2T - 1 = 2(56) - 1 = 111$, ya que entre $T = 56$ frames la máxima distancia representable es de $\pm(T-1) = \pm 55$ pasos: un extremo cubre el caso en que el último cuadro mira al primero (−55), y el otro el caso inverso (+55). Ambos tensores viajan separados hacia el mecanismo de atención. Allí, `pos_emb` es proyectado linealmente a través de `linear_pos` (sin sesgo) para producir la matriz $P$ de forma `[1, 8, 111, 128]`; su traspuesta $P^T$ es la que se multiplica por la Query modificada para construir `matrix_bd` (relevancia posicional), mientras que `matrix_ac` captura la similitud de contenido mediante el producto $Q \times K^T$.
+
+```mermaid
+flowchart LR
+    A["x_subsampled\n[1, 56, 1024]"] --> B["pos_enc\nRelPositionalEncoding"]
+
+    B -->|"sin cambios"| C["x_ready\n[1, 56, 1024]\nContenido acústico"]
+    B -->|"genera"| D["pos_emb\n[1, 111, 1024]\nDistancias relativas"]
+
+    C --> E["linear_q/k/v\nQ, K, V → [1, 8, 56, 128]"]
+    D --> F["linear_pos\nP → [1, 8, 111, 128]"]
+
+    E -->|"Q × Kᵀ"| G["matrix_ac\n[1, 8, 56, 56]\nSimilitud de contenido"]
+    E -->|"Q × Pᵀ + rel_shift"| H["matrix_bd\n[1, 8, 56, 56]\nRelevancia posicional"]
+    F --> H
+
+    G --> I["Atención total\nac + bd → Softmax → × V"]
+    H --> I
+
+    I --> J["Salida MHA\n[1, 56, 1024]"]
+```
+
+
+
 
 ### 4.5 Análisis de una capa Conformer (`ConformerLayer`)
 
@@ -64,6 +89,25 @@ Se tomó la capa `encoder.layers[0]` y se trazó su flujo interno completo:
 2. **Self-Attention con posición relativa** (`RelPositionMultiHeadAttention`) — Se computaron manualmente los tensores `Q`, `K`, `V` de 8 cabezas (dimensión por cabeza: 128). A partir de estos, se construyeron las matrices `matrix_ac` y `matrix_bd` incorporando los sesgos de posición relativa `pos_bias_u` y `pos_bias_v` con el fin de analizar detalladamente la contribución del **contenido** y de la **información posicional** en el mecanismo de atención.
 3. **Módulo Convolucional** — `pointwise_conv1` expande a 2048 canales; `depthwise_conv` con kernel 9 aplica convolución causal; `pointwise_conv2` comprime de vuelta a 1024. Cada sub-paso se verificó con tensores reales.
 4. **FeedForward 2** — Post-Net: misma estructura que FeedForward 1.
+
+La siguiente tabla muestra el shape del tensor en cada sub-etapa verificada con tensores reales:
+
+| Sub-etapa | Shape | Descripción |
+| :--- | :--- | :--- |
+| Entrada a la capa | `[1, 56, 1024]` | `[B, T, d_model]` — salida del pos. encoding |
+| Q, K, V (linear_q/k/v) | `[1, 56, 1024]` | Tres proyecciones independientes del mismo tensor |
+| Q, K, V multi-head | `[1, 8, 56, 128]` | Redimensionado en 8 cabezas × 128 dim/cabeza |
+| `matrix_ac` (contenido) | `[1, 8, 56, 56]` | $(Q+u) \times K^T$ — similitud acústica |
+| `matrix_bd` antes de `rel_shift` | `[1, 8, 56, 111]` | $(Q+v) \times P^T$ — relevancia posicional ($2T-1$) |
+| `matrix_bd` tras `rel_shift` | `[1, 8, 56, 56]` | Alineada al eje $T \times T$ |
+| Salida de atención (`linear_out`) | `[1, 56, 1024]` | 8 cabezas re-ensambladas y proyectadas |
+| Entrada `pointwise_conv1` | `[1, 56, 1024]` | Post-MHA con residual + LayerNorm |
+| Tras `pointwise_conv1` + GLU | `[1, 56, 1024]` | Expansión a 2048 canales y corte a la mitad |
+| Tras `depthwise_conv` (kernel=9) | `[1, 56, 1024]` | Filtrado causal local |
+| Salida `pointwise_conv2` | `[1, 56, 1024]` | Proyección de salida 1024→1024 |
+| Salida final de la capa | `[1, 56, 1024]` | Tras FeedForward 2 + LayerNorm de salida |
+
+La forma `[1, 56, 1024]` se preserva a lo largo de todo el bloque gracias a las conexiones residuales, y esta misma salida es la entrada de la siguiente de las 32 capas Conformer.
 
 ### 4.6 Decoder Transformer (`TransformerDecoderNM`)
 
