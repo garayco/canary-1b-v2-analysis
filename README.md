@@ -182,6 +182,10 @@ En todos los casos el WER supera con amplitud al CER, lo que indica que el model
 *   **Posibles mejoras:** Explorar técnicas de optimización para reducir la huella de memoria del modelo y facilitar su despliegue, aplicar ajuste fino sobre dominios o variedades lingüísticas específicas, y ampliar la evaluación a condiciones de audio más diversas y representativas del uso real.
    
 ## 8. Referencias
-[1] NVIDIA Framework NeMo and Canary Architecture base paper: *ArXiv preprint arXiv:2509.14128v2*, 2025.
-[2] "Conformer: Convolution-augmented Transformer for Speech Recognition", *Interspeech 2020*.
-[3] "FastConformer: Enhancing Conformer for ASR using Subsampling and Lightweight Convolutions", *Interspeech 2023*.
+
+[1] NVIDIA, “Canary-1B-v2 & Parakeet-TDT-0.6B-v3: Efficient and High-Performance Models for Multilingual ASR and AST,” arXiv:2509.14128, 2025. [En línea]. Disponible en: https://arxiv.org/abs/2509.14128  
+
+[2] A. Gulati et al., “Conformer: Convolution-augmented Transformer for Speech Recognition,” arXiv:2005.08100, 2020. [En línea]. Disponible en: https://arxiv.org/abs/2005.08100  
+
+[3] D. Rekesh et al., “Fast Conformer: Enhancing Conformer for ASR using Subsampling and Lightweight Convolutions,” arXiv:2305.05084, 2023. [En línea]. Disponible en: https://arxiv.org/abs/2305.05084  
+
