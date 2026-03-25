@@ -86,18 +86,24 @@ Finalmente, se ejecutó una llamada completa a `_CANARY_MODEL_1b_v2.transcribe()
 
 ## 6. Resultados y análisis
 
-Para evaluar el desempeño del modelo de forma cuantitativa, se ejecutó el notebook `inference_and_metrics.ipynb`, el cual procesó 10 audios en español del dataset `facebook/multilingual_librispeech`. Por cada audio se obtuvo la transcripción del modelo y se comparó contra el *ground truth* usando las métricas estándar de ASR: WER y CER.
+Para evaluar el desempeño del modelo de forma cuantitativa, se ejecutó el notebook `inferencia_y_metricas.ipynb`, el cual procesó 10 audios en español del dataset `facebook/multilingual_librispeech`. Por cada audio se obtuvo la transcripción del modelo y se comparó contra el *ground truth* usando las métricas estándar de ASR: WER y CER.
+
+**Resumen de métricas (10 audios):**
+
+| Métrica | Promedio | Transcripciones exactas |
+| :--- | :---: | :---: |
+| **WER** | 1.93 % | 6 / 10 (60 %) |
+| **CER** | 0.42 % | 6 / 10 (60 %) |
 
 **Análisis de Desempeño (WER y CER):**
 
-El gráfico presenta dos métricas fundamentales para evaluar modelos ASR:
-*   **Word Error Rate (WER):** Mide proporciones de inserciones, borrados y sustituciones.
-*   **Character Error Rate (CER):** Mide con mayor precisión equivocaciones específicas dentro de una misma palabra.
+El gráfico presenta las dos métricas por audio:
+*   **Word Error Rate (WER):** Mide proporciones de inserciones, borrados y sustituciones a nivel de palabra.
+*   **Character Error Rate (CER):** Mide con mayor granularidad los errores a nivel de carácter.
 
 ![WER y CER](assets/wer_cer.png)
 
 ### Ejemplos de Inferencia (Audio 2 y Audio 7)
-
 
 <small>
 
@@ -119,15 +125,16 @@ El gráfico presenta dos métricas fundamentales para evaluar modelos ASR:
 
 </small>
 
-En 6 de los 10 audios, el modelo alcanzó un error de 0.0 (0%). Esto indica una transcripción literal exacta frente al Ground Truth. Este resultado sugiere que el modelo es sumamente robusto en condiciones óptimas o con vocabulario estándar que ya domina con precisión.
+En 6 de los 10 audios el modelo alcanzó WER = CER = 0 %, es decir, transcripción literalmente exacta frente al *ground truth*. En los 4 audios restantes se observó el siguiente comportamiento:
 
-En los audios donde sí se presentaron errores, observamos el siguiente comportamiento:
+| Audio | WER | CER | Tipo de error |
+| :--- | :---: | :---: | :--- |
+| audio_2 | 7.32 % | 1.81 % | Sustitución léxica (*huero→güero*, *hojas→Ojas*) |
+| audio_4 | 4.35 % | 0.90 % | Normalización de tilde (*sólo→solo*) |
+| audio_6 | 2.63 % | 0.56 % | Inserción de signo de interrogación (`¿`) |
+| audio_7 | 5.00 % | 0.97 % | Acento tipográfico antiguo (*á→a*) |
 
-* Audio_2: Presenta el desempeño más bajo con un WER cercano a 0.073 (7.3%). Es el punto de mayor fricción para el modelo.
-* Audio_7: Le sigue con un WER de 0.05 (5%).
-* Audios 4 y 6: Mantienen niveles de error moderados, por debajo del 4.5%.
-
-El WER es significativamente mayor que el CER. Esto es un comportamiento saludable para un modelo de lenguaje ya que cuando el modelo se equivoca, suele fallar en una palabra completa, pero la mayoría de los caracteres de la frase siguen siendo correctos. Si el CER fuera cercano al WER, indicaría que el modelo está "alucinando" caracteres aleatorios.
+En todos los casos el WER supera con amplitud al CER, lo que indica que el modelo comete errores de **palabra completa plausible** (elige una alternativa fonéticamente cercana), no de carácter aleatorio. Si el CER fuera similar al WER, señalaría alucinación de caracteres — un fallo mucho más grave.
 
 ## 7. Conclusiones
 
