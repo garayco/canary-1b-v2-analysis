@@ -1,0 +1,14 @@
+streamlit
+nemo_toolkit[asr]
+torch
+torchaudio
+librosa
+soundfile
+jiwer
+datasets
+numpy
+pandas
+matplotlib
+seaborn
+Cython
+wget
