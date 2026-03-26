@@ -1,7 +1,7 @@
 # Análisis y Exploración del Modelo NVIDIA Canary-1B-v2
 
 ## 1. Resumen (Abstract)
-Este proyecto documenta el análisis y la implementación práctica del modelo multilingüe **Canary-1B-v2** creado por NVIDIA para tareas secuenciales de Reconocimiento Automático del Habla (ASR) y Traducción de Voz a Texto (S2T). El presente trabajo aborda desde el entendimiento de la arquitectura hasta el despliegue de una interfaz gráfica de usuario en `Streamlit` para aplicar inferencia interactiva en audios locales. Adicionalmente, se consolida una evaluación cuantitativa del modelo utilizando métricas de error de transcripción y de caracteres (WER/CER).
+Este proyecto documenta el análisis y la implementación práctica del modelo multilingüe **Canary-1B-v2** creado por NVIDIA para tareas secuenciales de Reconocimiento Automático del Habla (ASR) y Traducción de Voz a Texto (S2T). Su arquitectura combina un encoder **FastConformer** de 32 capas con un decoder Transformer de 8 bloques. El presente trabajo aborda desde el entendimiento de la arquitectura hasta el despliegue de una interfaz gráfica de usuario en `Streamlit` para aplicar inferencia interactiva en audios locales. Adicionalmente, se consolida una evaluación cuantitativa del modelo utilizando métricas de error de transcripción y de caracteres (WER/CER).
 
 ## 2. Introducción
 El constante avance en el procesamiento de datos secuenciales ha impulsado el desarrollo de modelos fundacionales cada vez más robustos para tareas relacionadas con el habla. En este contexto, el presente trabajo se fundamenta en el modelo descrito en el artículo *"CANARY-1B-V2 & PARAKEET-TDT-0.6B-V3: EFFICIENT AND HIGH-PERFORMANCE MODELS FOR MULTILINGUAL ASR AND AST"* [[arXiv]](https://arxiv.org/pdf/2509.14128). 
@@ -39,7 +39,7 @@ Luego se inspeccionó el árbol de módulos, revelando la jerarquía completa: `
 
 Se cargó un audio real (`Grabacion.m4a`) con `librosa.load(sr=16000)`. Esta señal se pasó manualmente por el `preprocessor` del modelo para generar el espectrograma Mel.
 
-### 4.3 Submuestreo agresivo 8× (`ConvSubsampling`)
+### 4.3 Submuestreo agresivo 8× — FastConformer `ConvSubsampling`
 
 Se extrajo y ejecutó el módulo `encoder.pre_encode` de forma aislada para simular paso a paso la reducción de dimensionalidad:
 
@@ -76,7 +76,7 @@ Cada una de las 111 filas de `pos_emb` corresponde a una distancia relativa dist
 | $P$ (`linear_pos`) | `[1, 8, 111, 128]` | `pos_emb` proyectado al espacio multi-cabeza |
 | $P^T$ | `[1, 8, 128, 111]` | Traspuesta de $P$; se multiplica por $Q$ para obtener `matrix_bd` |
 
-### 4.5 Análisis de una capa Conformer (`ConformerLayer`)
+### 4.5 Análisis de una capa FastConformer (`ConformerLayer`)
 
 Se tomó la capa `encoder.layers[0]` y se trazó su flujo interno completo:
 
